@@ -23,10 +23,11 @@ validFloor = ((&&) <$> allAtMostAbsThree <*> allMonotone) . diffLeft
         allAtMostAbsThree = all (\x -> (abs x) <= 3)
         allMonotone       = (||) <$> all (> 0) <*> all (< 0)
 
+countTrue :: [Bool] -> Int
+countTrue = (foldl (\acc b -> acc + fromEnum b) 0)
+
 solve01 :: String -> String
 solve01 = show . countTrue . map validFloor . parse
-    where
-        countTrue = (foldl (\acc b -> acc + fromEnum b) 0)
 
 removeNth :: Int -> [a] -> [a]
 removeNth n l = take (n) l ++ drop (n+1) l
@@ -36,8 +37,6 @@ generateToleranceFloors l = l : map ((flip removeNth) l) [0..(length l)-1]
 
 solve02 :: String -> String
 solve02 = show . countTrue . map (or . map validFloor) . map generateToleranceFloors . parse
-    where
-        countTrue = (foldl (\acc b -> acc + fromEnum b) 0)
 
 main :: IO ()
 main = do
