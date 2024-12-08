@@ -64,19 +64,6 @@ xmasSum l = sum $ map (\f -> f l)
 solve01 :: String -> String
 solve01 = show . xmasSum . (splitOnChar '\n')
 
---"M S"
---" A "
---"M S"
---"M M"
---" A "
---"S S"
---"S S"
---" A "
---"M M"
---"S M"
---" A "
---"S M"
-
 get :: [String] -> (Int,Int) -> Char
 get l (x,y) = (!! y) . (!! x) $ l
 
