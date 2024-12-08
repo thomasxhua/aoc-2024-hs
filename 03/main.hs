@@ -20,43 +20,78 @@ data StateMulFirst
     | StateMULbnc
     | StateMULbncn
     | StateMULbncnb
+    | StateD
+    | StateDO
+    | StateDON
+    | StateDONa
+    | StateDONaT
+    | StateDONaTb
+    | StateDONaTbb
+    | StateD'
+    | StateDO'
+    | StateDO'b
+    | StateDO'bb
     deriving (Show, Eq, Ord, Enum)
 
-autMulFirst :: StateMulFirst -> String -> String -> (String, String)
-autMulFirst state acc []     = case state of
-    StateMULbncnb -> (acc,[])
-    _             -> ([],[])
-autMulFirst state acc (x:xs) = case state of
+autMulFirst :: StateMulFirst -> (String,String) -> String -> (Maybe (String,String), String)
+autMulFirst state acc []       = case state of
+    StateMULbncnb -> (Just acc,[])
+    _             -> (Nothing,[])
+autMulFirst state (a,b) (x:xs) = case state of
     State0        -> case x of
-                       'm' -> autMulFirst StateM [x] xs
-                       _   -> autMulFirst State0 [] xs
+                       'm' -> autMulFirst StateM nil xs
+                       'd' -> autMulFirst StateD nil xs
+                       _   -> autMulFirst State0 nil xs
+    -- don't cases
+    StateD        -> acceptOrReject (x == 'o')
+    StateDO       -> acceptOrReject (x == 'n')
+    StateDON      -> acceptOrReject (x == '\'')
+    StateDONa     -> acceptOrReject (x == 't')
+    StateDONaT    -> acceptOrReject (x == '(')
+    StateDONaTb   -> acceptOrReject (x == ')')
+    StateDONaTbb  -> acceptOrRejectDont (x == 'd')
+    -- (don't case =>) do cases
+    StateD'       -> acceptOrRejectDont (x == 'o')
+    StateDO'      -> acceptOrRejectDont (x == '(')
+    StateDO'b     -> acceptOrRejectDont (x == ')')
+    StateDO'bb    -> autMulFirst State0 nil (x:xs)
+    -- mul cases
     StateM        -> acceptOrReject (x == 'u')
     StateMU       -> acceptOrReject (x == 'l')
     StateMUL      -> acceptOrReject (x == '(')
-    StateMULb     -> acceptOrReject (isDigit x)
-    StateMULbn    -> acceptOrRejectNum (x == ',')
-    StateMULbnc   -> acceptOrReject (isDigit x)
-    StateMULbncn  -> acceptOrRejectNum (x == ')')
-    StateMULbncnb -> (acc,(x:xs))
+    StateMULb     -> acceptOrRejectNumLeft (succ state) False
+    StateMULbn    -> acceptOrRejectNumLeft state (x == ',')
+    StateMULbnc   -> acceptOrRejectNumRight (succ state) (isDigit x)
+    StateMULbncn  -> acceptOrRejectNumRight state (x == ')')
+    StateMULbncnb -> (Just (a,b),(x:xs))
     where
-        acceptOrReject cond
-            | cond      = autMulFirst (succ state) (acc++[x]) xs
-            | otherwise = autMulFirst State0 acc (x:xs)
-        acceptOrRejectNum cond
-            | isDigit x = autMulFirst state (acc++[x]) xs
-            | otherwise = acceptOrReject cond
+        nil = ([],[])
+        acceptOrReject cond = if cond
+            then autMulFirst (succ state) (a,b) xs
+            else autMulFirst State0 nil (x:xs)
+        acceptOrRejectNumLeft state' cond = if isDigit x
+            then autMulFirst state' (a++[x],b) xs
+            else acceptOrReject cond
+        acceptOrRejectNumRight state' cond = if isDigit x
+            then autMulFirst state' (a,b++[x]) xs
+            else acceptOrReject cond
+        acceptOrRejectDont cond = if cond
+            then autMulFirst (succ state) (a,b) xs
+            else autMulFirst StateDONaTbb (a,b) xs
 
-detectMulFirst :: String -> (String,String)
-detectMulFirst = autMulFirst State0 []
+parseMulFirst :: String -> (Maybe (Int,Int), String)
+parseMulFirst s = case autMulFirst State0 ([],[]) s of
+    (Nothing, rest)    -> (Nothing, rest)
+    (Just (a,b), rest) -> (Just (read a, read b), rest)
 
-detectMultStrings :: String -> [String]
-detectMultStrings [] = []
-detectMultStrings s  = case detectMulFirst s of
-    ([],rest)     -> detectMultStrings rest
-    (mulStr,rest) -> mulStr : (detectMultStrings rest)
+parseMuls :: String -> [(Int,Int)]
+parseMuls [] = []
+parseMuls s  = case parseMulFirst s of
+    (Nothing, rest)   -> parseMuls rest
+    (Just nums, rest) -> nums : (parseMuls rest)
 
 solve :: String -> String
-solve input = foldl (++) [] $ detectMultStrings input
+solve = show . sum . (map (\(a,b) -> a*b)) . parseMuls
 
 main :: IO ()
 main = do
