@@ -61,11 +61,43 @@ xmasSum l = sum $ map (\f -> f l)
     , xmasTtoR, xmasRtoT
     ]
 
-solve :: String -> String
-solve = show . xmasSum . (splitOnChar '\n')
+solve01 :: String -> String
+solve01 = show . xmasSum . (splitOnChar '\n')
+
+--"M S"
+--" A "
+--"M S"
+--"M M"
+--" A "
+--"S S"
+--"S S"
+--" A "
+--"M M"
+--"S M"
+--" A "
+--"S M"
+
+get :: [String] -> (Int,Int) -> Char
+get l (x,y) = (!! y) . (!! x) $ l
+
+allowedXs :: [String]
+allowedXs = ["MSAMS","MMASS","SSAMM","SMASM"]
+
+generateXs :: [String] -> [String]
+generateXs [] = []
+generateXs l  = map generateX $ [(x,y) | x <- [0..m-2], y <- [0..n-2]]
+    where
+        m = length l-1
+        n = length (head l)-1
+        generateX (x,y) = map (get l) posns
+            where
+                posns = [(x,y), (x,y+2), (x+1,y+1), (x+2,y), (x+2,y+2)]
+
+solve02 :: String -> String
+solve02 = show . length . (filter (flip elem $ allowedXs)) . generateXs . (splitOnChar '\n')
 
 main :: IO ()
 main = do
     input <- readFile "input"
-    putStrLn $ solve input
+    putStrLn $ solve02 input
 
